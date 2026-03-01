@@ -27,6 +27,8 @@ const UNIVERSAL_SIGNER = '0xcB0e58b011924e049ce4b4D62298Edf43dFF0BDd';
 let currentChart = null;
 let chartDataCache = [];
 let fieldConfigsCache = [];
+let lastBlockFetched = 0n;
+let pollingInterval = null;
 
 function truncateAddress(address) {
     if (!address) return '';
@@ -96,6 +98,7 @@ async function initDashboard() {
         document.getElementById('storeAddressLink').href = `${JIBCHAIN.blockExplorers.default.url}/address/${FLOODBOY016_STORE}`;
 
         const currentBlock = await client.getBlockNumber();
+        lastBlockFetched = currentBlock;
         document.getElementById('currentBlock').innerText = `Current Block: ${currentBlock}`;
 
         const now = new Date();
@@ -118,16 +121,16 @@ async function initDashboard() {
             functionName: 'getAllFields'
         });
 
-        const [timestamp, values] = await client.readContract({
+        const latestRecord = await client.readContract({
             address: FLOODBOY016_STORE,
             abi: StoreABI,
             functionName: 'getLatestRecord',
             args: [UNIVERSAL_SIGNER]
         });
 
-        renderDataTable(fieldConfigsCache, values);
+        renderDataTable(fieldConfigsCache, latestRecord[1]);
 
-        // 3. Fetch Historical Data
+        // 3. Fetch Historical Data (Last 24h)
         document.getElementById('chartLoading').classList.remove('hidden');
         const fromBlock = currentBlock - 28800n; // ~24h
 
@@ -140,12 +143,6 @@ async function initDashboard() {
             args: { sensor: UNIVERSAL_SIGNER }
         });
 
-        if (events.length === 0) {
-            document.getElementById('chartLoading').classList.add('hidden');
-            document.getElementById('chartNoData').classList.remove('hidden');
-            return;
-        }
-
         const waterDepthIdx = fieldConfigsCache.findIndex(f => f.name.toLowerCase().includes('water_depth') && !f.name.includes('min') && !f.name.includes('max'));
         const voltageIdx = fieldConfigsCache.findIndex(f => f.name.toLowerCase().includes('battery_voltage') && !f.name.includes('min') && !f.name.includes('max'));
 
@@ -157,8 +154,14 @@ async function initDashboard() {
 
         document.getElementById('chartLoading').classList.add('hidden');
 
-        // Initial Chart Render
-        renderChart('waterDepth');
+        if (chartDataCache.length === 0) {
+            document.getElementById('chartNoData').classList.remove('hidden');
+        } else {
+            renderChart(getActiveViewMode());
+        }
+
+        // 4. Start Real-time Polling
+        startPolling();
 
     } catch (error) {
         console.error("Error initializing dashboard", error);
@@ -167,11 +170,76 @@ async function initDashboard() {
     }
 }
 
+function getActiveViewMode() {
+    const activeBtn = document.querySelector('.toggle-btn.active');
+    return activeBtn ? activeBtn.getAttribute('data-view') : 'waterDepth';
+}
+
+async function startPolling() {
+    if (pollingInterval) clearInterval(pollingInterval);
+
+    pollingInterval = setInterval(async () => {
+        try {
+            const currentBlock = await client.getBlockNumber();
+            if (currentBlock > lastBlockFetched) {
+                console.log(`New blocks found: ${lastBlockFetched + 1n} to ${currentBlock}`);
+
+                // Update UI Block Number
+                document.getElementById('currentBlock').innerText = `Current Block: ${currentBlock}`;
+
+                // Fetch new events
+                const newEvents = await client.getContractEvents({
+                    address: FLOODBOY016_STORE,
+                    abi: StoreABI,
+                    eventName: 'RecordStored',
+                    fromBlock: lastBlockFetched + 1n,
+                    toBlock: currentBlock,
+                    args: { sensor: UNIVERSAL_SIGNER }
+                });
+
+                if (newEvents.length > 0) {
+                    const waterDepthIdx = fieldConfigsCache.findIndex(f => f.name.toLowerCase().includes('water_depth') && !f.name.includes('min') && !f.name.includes('max'));
+                    const voltageIdx = fieldConfigsCache.findIndex(f => f.name.toLowerCase().includes('battery_voltage') && !f.name.includes('min') && !f.name.includes('max'));
+
+                    const newData = newEvents.map(ev => ({
+                        timestamp: Number(ev.args.timestamp) * 1000,
+                        waterDepth: waterDepthIdx >= 0 ? Number(ev.args.values[waterDepthIdx]) / 10000 : null,
+                        batteryVoltage: voltageIdx >= 0 ? Number(ev.args.values[voltageIdx]) / 100 : null
+                    }));
+
+                    chartDataCache = [...chartDataCache, ...newData].sort((a, b) => a.timestamp - b.timestamp);
+
+                    // Limit cache to last 200 points for performance
+                    if (chartDataCache.length > 200) chartDataCache = chartDataCache.slice(-200);
+
+                    // Update Data Table with latest record from events
+                    const latestEvent = newEvents[newEvents.length - 1];
+                    renderDataTable(fieldConfigsCache, latestEvent.args.values);
+
+                    // Update Last Updated Timestamp
+                    const now = new Date();
+                    const formattedTime = now.toLocaleTimeString();
+                    const formattedDate = now.toLocaleDateString();
+                    document.getElementById('lastUpdated').innerText = `Last Updated: ${formattedTime}`;
+                    document.getElementById('footerUpdated').innerText = `Last Updated: ${formattedDate}, ${formattedTime}`;
+
+                    // Re-render chart
+                    document.getElementById('chartNoData').classList.add('hidden');
+                    renderChart(getActiveViewMode());
+                }
+
+                lastBlockFetched = currentBlock;
+            }
+        } catch (err) {
+            console.warn("Polling error:", err);
+        }
+    }, 10000); // Poll every 10 seconds
+}
+
 function renderDataTable(fields, values) {
     const tbody = document.getElementById('dataTableBody');
     tbody.innerHTML = '';
 
-    // Grouping by base metric name to find current/min/max
     const metricGroups = {};
 
     fields.forEach((field, i) => {
@@ -291,3 +359,4 @@ document.getElementById('btnBatteryVoltage').addEventListener('click', (e) => {
 
 // Start the application
 initDashboard();
+
