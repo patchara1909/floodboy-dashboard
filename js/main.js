@@ -1,7 +1,58 @@
-import { createPublicClient, http } from 'viem';
-import Chart from 'chart.js/auto';
-import FactoryABI from '../abis/CatLabFactory.json';
-import StoreABI from '../abis/CatLabSecureSensorStore.abi.json';
+import { createPublicClient, http } from 'https://esm.sh/viem';
+import Chart from 'https://esm.sh/chart.js/auto';
+
+// ABIs embedded for standalone execution
+const FactoryABI = [
+    {
+        "name": "getStoreInfo",
+        "inputs": [{ "name": "store", "type": "address" }],
+        "outputs": [
+            { "name": "nickname", "type": "string" },
+            { "name": "owner", "type": "address" },
+            { "name": "authorizedSensorCount", "type": "uint256" },
+            { "name": "deployedBlock", "type": "uint128" },
+            { "name": "description", "type": "string" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
+
+const StoreABI = [
+    {
+        "name": "getAllFields",
+        "outputs": [{
+            "components": [
+                { "name": "name", "type": "string" },
+                { "name": "unit", "type": "string" },
+                { "name": "dtype", "type": "string" }
+            ],
+            "type": "tuple[]"
+        }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "name": "getLatestRecord",
+        "inputs": [{ "name": "sensor", "type": "address" }],
+        "outputs": [
+            { "name": "", "type": "uint256" },
+            { "name": "", "type": "int256[]" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            { "indexed": true, "name": "sensor", "type": "address" },
+            { "indexed": false, "name": "timestamp", "type": "uint256" },
+            { "indexed": false, "name": "values", "type": "int256[]" }
+        ],
+        "name": "RecordStored",
+        "type": "event"
+    }
+];
 
 // Configuration
 const JIBCHAIN = {
