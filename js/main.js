@@ -150,12 +150,13 @@ async function initDashboard() {
 
         const currentBlock = await client.getBlockNumber();
         lastBlockFetched = currentBlock;
-        document.getElementById('currentBlock').innerText = `Current Block: ${currentBlock}`;
+        document.getElementById('currentBlock').innerText = `Block: ${currentBlock}`;
 
         const now = new Date();
-        const formattedDate = `${now.toLocaleDateString()}, ${now.toLocaleTimeString()}`;
-        document.getElementById('lastUpdated').innerText = `Last Updated: ${formattedDate}`;
-        document.getElementById('footerUpdated').innerText = `Last Updated: ${formattedDate}`;
+        const formattedDate = now.toLocaleDateString();
+        const formattedTime = now.toLocaleTimeString();
+        document.getElementById('lastUpdated').innerText = formattedTime;
+        document.getElementById('footerUpdated').innerText = `Last Updated: ${formattedDate}, ${formattedTime}`;
 
         document.getElementById('ownerLink').innerText = truncateAddress(owner);
         document.getElementById('ownerLink').href = `${JIBCHAIN.blockExplorers.default.url}/address/${owner}`;
@@ -163,7 +164,8 @@ async function initDashboard() {
         document.getElementById('blockLink').innerText = `#${deployedBlock}`;
         document.getElementById('blockLink').href = `${JIBCHAIN.blockExplorers.default.url}/block/${deployedBlock}`;
 
-        document.getElementById('sensorCount').innerText = `Sensor Count: ${sensorCount} authorized sensor`;
+        document.getElementById('sensorCount').innerHTML = `<i data-lucide="cpu" class="icon-small"></i> ${sensorCount} Authorized Sensors`;
+        lucide.createIcons();
 
         // 2. Fetch Field Configs & Latest Record
         fieldConfigsCache = await client.readContract({
@@ -216,8 +218,10 @@ async function initDashboard() {
 
     } catch (error) {
         console.error("Error initializing dashboard", error);
-        document.getElementById('dataTableBody').innerHTML = `<tr><td colspan="4" class="text-center" style="color:red">Error loading data. See console.</td></tr>`;
-        document.getElementById('chartLoading').innerText = "Error loading historical data";
+        document.getElementById('dataTableBody').innerHTML = `<tr><td colspan="4" class="text-center" style="color:var(--danger)">Error loading telemetry. See console.</td></tr>`;
+        const loadingEl = document.getElementById('chartLoading');
+        loadingEl.innerHTML = `<i data-lucide="alert-circle" class="icon-large" style="color:var(--danger)"></i><p style="color:var(--danger)">Connection Lost: check RPC status</p>`;
+        lucide.createIcons();
     }
 }
 
@@ -236,7 +240,7 @@ async function startPolling() {
                 console.log(`New blocks found: ${lastBlockFetched + 1n} to ${currentBlock}`);
 
                 // Update UI Block Number
-                document.getElementById('currentBlock').innerText = `Current Block: ${currentBlock}`;
+                document.getElementById('currentBlock').innerText = `Block: ${currentBlock}`;
 
                 // Fetch new events
                 const newEvents = await client.getContractEvents({
@@ -271,7 +275,7 @@ async function startPolling() {
                     const now = new Date();
                     const formattedTime = now.toLocaleTimeString();
                     const formattedDate = now.toLocaleDateString();
-                    document.getElementById('lastUpdated').innerText = `Last Updated: ${formattedTime}`;
+                    document.getElementById('lastUpdated').innerText = formattedTime;
                     document.getElementById('footerUpdated').innerText = `Last Updated: ${formattedDate}, ${formattedTime}`;
 
                     // Re-render chart
@@ -312,13 +316,13 @@ function renderDataTable(fields, values) {
     Object.values(metricGroups).forEach(group => {
         let displayName = formatFieldName(group.name);
         if (group.count !== null && group.count !== undefined) {
-            displayName += ` (${group.count} samples)`;
+            displayName += ` <span style="font-size: 0.75rem; color: var(--text-muted)">(${group.count} samples)</span>`;
         }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${displayName}</strong></td>
-            <td>${group.current !== null ? processValue(group.current, group.unit) : '-'}</td>
+            <td style="color: var(--primary-light)">${group.current !== null ? processValue(group.current, group.unit) : '-'}</td>
             <td>${group.min !== null ? processValue(group.min, group.unit) : '-'}</td>
             <td>${group.max !== null ? processValue(group.max, group.unit) : '-'}</td>
         `;
@@ -327,6 +331,9 @@ function renderDataTable(fields, values) {
 }
 
 function renderChart(viewMode) {
+    const canvas = document.getElementById('sensorChart');
+    if (!canvas) return;
+
     if (currentChart) {
         currentChart.destroy();
     }
@@ -339,20 +346,28 @@ function renderChart(viewMode) {
     let rawData = [];
     let label = '';
     let color = '';
+    let glowColor = '';
 
     if (viewMode === 'waterDepth') {
         rawData = chartDataCache.map(d => d.waterDepth);
         label = 'Water Depth (m)';
-        color = '#3B82F6';
+        color = '#3b82f6';
+        glowColor = 'rgba(59, 130, 246, 0.4)';
     } else {
         rawData = chartDataCache.map(d => d.batteryVoltage);
         label = 'Battery Voltage (V)';
-        color = '#10B981';
+        color = '#10b981';
+        glowColor = 'rgba(16, 185, 129, 0.4)';
     }
 
     const smoothedDataSet = smoothData(rawData, 3);
 
-    const ctx = document.getElementById('sensorChart').getContext('2d');
+    const ctx = canvas.getContext('2d');
+
+    // Style adjustments for Dark Mode
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+
     currentChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -361,9 +376,21 @@ function renderChart(viewMode) {
                 label: label,
                 data: smoothedDataSet,
                 borderColor: color,
-                backgroundColor: color + '33',
-                borderWidth: 2,
-                pointRadius: 2,
+                backgroundColor: (context) => {
+                    const chart = context.chart;
+                    const { ctx, chartArea } = chart;
+                    if (!chartArea) return null;
+                    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                    gradient.addColorStop(0, color + '22');
+                    gradient.addColorStop(1, 'transparent');
+                    return gradient;
+                },
+                borderWidth: 3,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: color,
+                pointHoverBorderColor: '#fff',
+                pointHoverBorderWidth: 2,
                 fill: true,
                 tension: 0.4
             }]
@@ -371,28 +398,43 @@ function renderChart(viewMode) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index',
+            },
             plugins: {
                 legend: { display: false },
                 tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleFont: { family: 'Outfit', size: 14, weight: '600' },
+                    bodyFont: { family: 'Outfit', size: 13 },
+                    padding: 12,
+                    cornerRadius: 10,
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    displayColors: false,
                     callbacks: {
                         label: function (context) {
-                            return `${context.parsed.y.toFixed(viewMode === 'waterDepth' ? 4 : 3)} ${viewMode === 'waterDepth' ? 'm' : 'V'}`;
+                            return `${context.dataset.label}: ${context.parsed.y.toFixed(viewMode === 'waterDepth' ? 4 : 3)}`;
                         }
                     }
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: false
+                    beginAtZero: false,
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { font: { family: 'Outfit' } }
                 },
                 x: {
-                    grid: { display: false }
+                    grid: { display: false },
+                    ticks: { font: { family: 'Outfit' }, maxRotation: 0 }
                 }
             }
         }
     });
 
-    document.getElementById('chartTitle').innerText = `${viewMode === 'waterDepth' ? 'Water Depth' : 'Battery Voltage'} Over Time`;
+    document.getElementById('chartTitle').innerText = `${viewMode === 'waterDepth' ? 'Water Depth (m)' : 'Battery Voltage (V)'} Trend`;
 }
 
 // Event Listeners for Toggles

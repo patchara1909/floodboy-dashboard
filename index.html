@@ -4,79 +4,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FloodBoy Dashboard</title>
+    <title>FloodBoy Dashboard | Real-time Blockchain Monitor</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-    <div class="container">
-        <!-- Header Section -->
-        <header class="card Header">
-            <h1 id="storeNickname">FloodBoy Store</h1>
-            <p id="storeDescription" class="description">Loading store description...</p>
-            <div class="meta-info">
-                <span id="currentBlock" class="badge">Current Block: Loading...</span>
-                <span id="lastUpdated" class="timestamp">Last Updated: ...</span>
-            </div>
-            <div class="address-info">
-                <a id="storeAddressLink" href="#" target="_blank" class="address-link">
-                    <span id="storeAddressText">0x...</span>
-                </a>
-            </div>
-        </header>
-
-        <!-- Chart Section -->
-        <section class="card chart-section">
-            <div class="chart-header">
-                <h2 id="chartTitle">Water Depth Over Time</h2>
-                <div class="toggle-group">
-                    <button id="btnWaterDepth" class="toggle-btn active" data-view="waterDepth">Water Depth</button>
-                    <button id="btnBatteryVoltage" class="toggle-btn" data-view="batteryVoltage">Battery
-                        Voltage</button>
+    <div class="dashboard-wrapper">
+        <div class="glass-container">
+            <!-- Header Section -->
+            <header class="header-section">
+                <div class="header-left">
+                    <div class="brand">
+                        <i data-lucide="waves" class="icon-primary"></i>
+                        <h1>LATEST SENSOR DATA</h1>
+                    </div>
+                    <h2 id="storeNickname">FloodBoy Store</h2>
+                    <p id="storeDescription" class="store-desc">Connecting to blockchain...</p>
+                    <div class="store-address">
+                        <i data-lucide="map-pin" class="icon-small"></i>
+                        <a id="storeAddressLink" href="#" target="_blank">
+                            <span id="storeAddressText">0x...</span>
+                            <i data-lucide="external-link" class="icon-xs"></i>
+                        </a>
+                    </div>
                 </div>
-            </div>
-            <div class="chart-container">
-                <canvas id="sensorChart"></canvas>
-                <div id="chartLoading" class="loading-overlay hidden">Loading Chart Data...</div>
-                <div id="chartNoData" class="loading-overlay hidden">No data found in the last 24h</div>
-            </div>
-        </section>
+                <div class="header-right">
+                    <div class="status-badge">
+                        <span class="pulse"></span>
+                        <span id="liveStatusText">LIVE ON JIBCHAIN</span>
+                    </div>
+                    <div class="block-info">
+                        <i data-lucide="box" class="icon-small"></i>
+                        <span id="currentBlock">Block: ---</span>
+                    </div>
+                    <div class="update-info">
+                        <i data-lucide="clock" class="icon-small"></i>
+                        <span id="lastUpdated">Updating...</span>
+                    </div>
+                </div>
+            </header>
 
-        <!-- Data Table Section -->
-        <section class="card table-section">
-            <h2>Latest Reading Details</h2>
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Parameter</th>
-                            <th>Current</th>
-                            <th>Min (24h)</th>
-                            <th>Max (24h)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody">
-                        <tr>
-                            <td colspan="4" class="text-center">Initializing...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+            <!-- Chart Section -->
+            <section class="chart-section">
+                <div class="section-header">
+                    <div class="title-group">
+                        <i data-lucide="line-chart" class="icon-accent"></i>
+                        <h3 id="chartTitle">Telemetry Overview</h3>
+                    </div>
+                    <div class="toggle-group">
+                        <button id="btnWaterDepth" class="toggle-btn active" data-view="waterDepth">
+                            <i data-lucide="droplets" class="icon-xs"></i> Water Depth
+                        </button>
+                        <button id="btnBatteryVoltage" class="toggle-btn" data-view="batteryVoltage">
+                            <i data-lucide="zap" class="icon-xs"></i> Battery
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="sensorChart"></canvas>
+                    <div id="chartLoading" class="loading-overlay">
+                        <div class="spinner"></div>
+                        <p>Syncing Heritage Historical Data...</p>
+                    </div>
+                    <div id="chartNoData" class="no-data-overlay hidden">
+                        <i data-lucide="database-zap" class="icon-large"></i>
+                        <p>No activity detected in the last 24h</p>
+                    </div>
+                </div>
+            </section>
 
-        <!-- Footer Section -->
-        <footer>
-            <div class="footer-links">
-                <p>Owner: <a id="ownerLink" href="#" target="_blank">0x...</a></p>
-                <p>Deployed at block: <a id="blockLink" href="#" target="_blank">#...</a></p>
-                <p id="sensorCount">Sensor Count: ...</p>
-            </div>
-            <p id="footerUpdated" class="footer-timestamp">Last Updated: ...</p>
-        </footer>
+            <!-- Data Table Section -->
+            <section class="data-section">
+                <div class="section-header">
+                    <div class="title-group">
+                        <i data-lucide="layout-list" class="icon-accent"></i>
+                        <h3>Latest Reading Details</h3>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Current Value</th>
+                                <th>Min (24h)</th>
+                                <th>Max (24h)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <tr>
+                                <td colspan="4" class="text-center">Initializing telemetry...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Footer Section -->
+            <footer class="footer-section">
+                <div class="footer-left">
+                    <p>
+                        <i data-lucide="user" class="icon-small"></i>
+                        Owner: <a id="ownerLink" href="#" target="_blank">0x...</a>
+                    </p>
+                    <p>
+                        <i data-lucide="hash" class="icon-small"></i>
+                        Deployed Block: <a id="blockLink" href="#" target="_blank">#...</a>
+                    </p>
+                </div>
+                <div class="footer-right">
+                    <p id="sensorCount">
+                        <i data-lucide="cpu" class="icon-small"></i>
+                        0 Authorized Sensors
+                    </p>
+                    <p id="footerUpdated" class="footer-timestamp">---</p>
+                </div>
+            </footer>
+        </div>
     </div>
 
     <!-- Main JS -->
     <script type="module" src="js/main.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        // Since main.js handles dynamic content, we'll need to re-run lucide.createIcons() 
+        // after dynamic elements are injected. This is handled in the JS logic or by
+        // a mutation observer if needed, but for simplicity we'll just be careful.
+    </script>
 </body>
 
 </html>
