@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloodBoy Dashboard</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="header-section">
+            <div class="header-left">
+                <h1>Latest Sensor Data</h1>
+                <h2 id="storeNickname">Loading...</h2>
+                <p id="storeDescription" class="store-desc">Connecting to store...</p>
+            </div>
+            <div class="header-right">
+                <div class="status-badge">
+                    <span class="pulse"></span>
+                    <span id="currentBlock">Current Block: ...</span>
+                </div>
+                <div class="last-updated" id="lastUpdated">Last Updated: ...</div>
+                <div class="store-address">
+                    <a href="#" id="storeAddressLink" target="_blank" rel="noopener noreferrer">
+                        <span id="storeAddressText">0x...</span>
+                        <svg class="external-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+                            stroke-width="2" fill="none">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Chart Section -->
+        <section class="chart-section">
+            <div class="chart-controls">
+                <button id="btnWaterDepth" class="toggle-btn active" data-view="waterDepth">Water Depth</button>
+                <button id="btnBatteryVoltage" class="toggle-btn" data-view="batteryVoltage">Battery Voltage</button>
+            </div>
+            <h3 id="chartTitle">Water Depth Over Time</h3>
+            <div class="chart-wrapper">
+                <canvas id="sensorChart"></canvas>
+                <div id="chartLoading" class="loading-overlay">Loading historical data...</div>
+                <div id="chartNoData" class="no-data-overlay hidden">No historical data available</div>
+            </div>
+        </section>
+
+        <!-- Data Table Section -->
+        <section class="data-section">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Current</th>
+                        <th>Min</th>
+                        <th>Max</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <tr>
+                        <td colspan="4" class="text-center">Fetching sensor data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer-section">
+            <div class="footer-info">
+                <p id="footerUpdated">Last Updated: ...</p>
+                <p>Store Owner: <a href="#" id="ownerLink" target="_blank">0x...</a></p>
+            </div>
+            <div class="footer-meta">
+                <p>Deployed Block: <a href="#" id="blockLink" target="_blank">#...</a></p>
+                <p id="sensorCount">Sensor Count: ...</p>
+            </div>
+        </footer>
+    </div>
+    <script type="module" src="./js/main.js"></script>
+</body>
+
+</html>

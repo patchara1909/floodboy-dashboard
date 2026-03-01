@@ -1,0 +1,35 @@
+[
+    {
+        "name": "getStoreInfo",
+        "inputs": [
+            {
+                "name": "store",
+                "type": "address"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "nickname",
+                "type": "string"
+            },
+            {
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "name": "authorizedSensorCount",
+                "type": "uint256"
+            },
+            {
+                "name": "deployedBlock",
+                "type": "uint128"
+            },
+            {
+                "name": "description",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
